@@ -48,6 +48,6 @@ class GoliashWaterSensor(CoordinatorEntity, SensorEntity):
     def native_value(self):
         """Current water meter reading from API response."""
         try:
-            return self.coordinator.data["device"]["graphData"]["currentState"]
+            return self.coordinator.data["graphData"]["currentState"]
         except (TypeError, KeyError):
             return None
