@@ -1,9 +1,11 @@
 {
   "domain": "goliash",
-  "name": "Goliash vodoměr",
+  "name": "Goliash",
   "version": "1.0.0",
+  "integration_type": "service",
   "config_flow": true,
-  "documentation": "",
+  "documentation": "https://github.com/goliash-io/home-assistant-goliash",
+  "issue_tracker": "https://github.com/goliash-io/home-assistant-goliash/issues",
   "requirements": [],
   "dependencies": [],
   "codeowners": [],

@@ -1,13 +1,15 @@
-"""Senzor entity pro Goliash vodoměr."""
+"""Sensor platform for Goliash water meter."""
 from __future__ import annotations
 
 from homeassistant.components.sensor import (
-    SensorEntity,
     SensorDeviceClass,
+    SensorEntity,
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntryType
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -23,22 +25,28 @@ async def async_setup_entry(
 
 
 class GoliashWaterSensor(CoordinatorEntity, SensorEntity):
-    """Senzor zobrazující aktuální stav vodoměru."""
+    """Sensor showing the current water meter reading."""
 
+    has_entity_name = True
+    translation_key = "water_meter"
     _attr_device_class = SensorDeviceClass.WATER
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_native_unit_of_measurement = "m³"
-    _attr_icon = "mdi:water"
 
     def __init__(self, coordinator: GoliashCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._device_id = entry.data[CONF_DEVICE_ID]
-        self._attr_unique_id = f"goliash_{self._device_id}"
-        self._attr_name = f"Vodoměr {self._device_id}"
+        device_id = entry.data[CONF_DEVICE_ID]
+        self._attr_unique_id = f"goliash_{device_id}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, device_id)},
+            name=f"Goliash {device_id}",
+            manufacturer="Goliash",
+            entry_type=DeviceEntryType.SERVICE,
+        )
 
     @property
     def native_value(self):
-        """Aktuální stav vodoměru z API odpovědi."""
+        """Current water meter reading from API response."""
         try:
             return self.coordinator.data["device"]["graphData"]["currentState"]
         except (TypeError, KeyError):

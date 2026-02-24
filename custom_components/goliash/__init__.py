@@ -1,23 +1,28 @@
 """Goliash custom integration."""
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 
 import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, CONF_USERNAME, CONF_PASSWORD, CONF_DEVICE_ID
+from .const import (
+    DOMAIN,
+    CONF_USERNAME,
+    CONF_PASSWORD,
+    CONF_DEVICE_ID,
+    API_LOGIN,
+    API_MEASUREMENTS,
+)
 
 _LOGGER = logging.getLogger(__name__)
-PLATFORMS = ["sensor"]
+PLATFORMS: list[Platform] = [Platform.SENSOR]
 SCAN_INTERVAL = timedelta(hours=12)
-
-API_LOGIN = "https://api.goliash.cz/api/login_check"
-API_MEASUREMENTS = "https://api.goliash.cz/api/device/measurements/{device_id}"
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -39,7 +44,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 class GoliashCoordinator(DataUpdateCoordinator):
-    """Coordinator – stahuje data a automaticky obnovuje token."""
+    """Coordinator for fetching data from Goliash API."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
@@ -49,7 +54,7 @@ class GoliashCoordinator(DataUpdateCoordinator):
         self._token: str | None = None
 
     async def _login(self) -> str:
-        """Přihlásí se a vrátí JWT token."""
+        """Authenticate and return a JWT token."""
         async with aiohttp.ClientSession() as session:
             resp = await session.post(
                 API_LOGIN,
@@ -60,9 +65,7 @@ class GoliashCoordinator(DataUpdateCoordinator):
             return data["token"]
 
     async def _async_update_data(self) -> dict:
-        """Stáhne aktuální stav vodoměru."""
-        from datetime import datetime, timezone, timedelta
-
+        """Fetch current water meter state."""
         try:
             self._token = await self._login()
 
@@ -81,7 +84,6 @@ class GoliashCoordinator(DataUpdateCoordinator):
                 return await resp.json()
 
         except aiohttp.ClientError as err:
-            raise UpdateFailed(f"Chyba komunikace s Goliash API: {err}") from err
+            raise UpdateFailed(f"Error communicating with Goliash API: {err}") from err
         except KeyError as err:
-            raise UpdateFailed(f"Neočekávaná struktura odpovědi: {err}") from err
-
+            raise UpdateFailed(f"Unexpected API response structure: {err}") from err

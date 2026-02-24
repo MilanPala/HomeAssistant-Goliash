@@ -1,15 +1,12 @@
-"""Config flow – formulář při přidávání integrace v UI."""
+"""Config flow for Goliash integration."""
 from __future__ import annotations
 
-import voluptuous as vol
 import aiohttp
+import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, CONF_USERNAME, CONF_PASSWORD, CONF_DEVICE_ID
-
-API_LOGIN = "https://api.goliash.cz/api/login_check"
+from .const import DOMAIN, CONF_USERNAME, CONF_PASSWORD, CONF_DEVICE_ID, API_LOGIN
 
 STEP_SCHEMA = vol.Schema(
     {
@@ -21,7 +18,7 @@ STEP_SCHEMA = vol.Schema(
 
 
 async def _validate_credentials(username: str, password: str) -> bool:
-    """Ověří přihlašovací údaje vůči API."""
+    """Validate credentials against the Goliash API."""
     async with aiohttp.ClientSession() as session:
         resp = await session.post(
             API_LOGIN,
@@ -31,7 +28,7 @@ async def _validate_credentials(username: str, password: str) -> bool:
 
 
 class GoliashConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Průvodce přidáním Goliash integrace."""
+    """Handle a config flow for Goliash."""
 
     VERSION = 1
 
@@ -44,12 +41,11 @@ class GoliashConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     user_input[CONF_USERNAME], user_input[CONF_PASSWORD]
                 )
                 if valid:
-                    # Unikátní ID = device_id, zabrání duplicitám
                     await self.async_set_unique_id(user_input[CONF_DEVICE_ID])
                     self._abort_if_unique_id_configured()
 
                     return self.async_create_entry(
-                        title=f"Goliash vodoměr {user_input[CONF_DEVICE_ID]}",
+                        title=f"Goliash {user_input[CONF_DEVICE_ID]}",
                         data=user_input,
                     )
                 else:
@@ -62,4 +58,3 @@ class GoliashConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=STEP_SCHEMA,
             errors=errors,
         )
-
