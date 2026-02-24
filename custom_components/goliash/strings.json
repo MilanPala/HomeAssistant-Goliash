@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Goliash – přihlášení",
+        "description": "Zadejte přihlašovací údaje a ID vodoměru z portálu Goliash.",
+        "data": {
+          "username": "E-mail",
+          "password": "Heslo",
+          "device_id": "ID vodoměru (např. 97758)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Neplatné přihlašovací údaje.",
+      "cannot_connect": "Nelze se připojit k API."
+    },
+    "abort": {
+      "already_configured": "Tento vodoměr je již nakonfigurován."
+    }
+  }
+}
