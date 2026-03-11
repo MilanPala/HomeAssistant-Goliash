@@ -9,6 +9,7 @@ import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -22,7 +23,6 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[Platform] = [Platform.SENSOR]
-SCAN_INTERVAL = timedelta(hours=12)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -32,6 +32,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    async def _refresh_at_5am(_now: datetime) -> None:
+        await coordinator.async_refresh()
+
+    entry.async_on_unload(
+        async_track_time_change(hass, _refresh_at_5am, hour=5, minute=0, second=0)
+    )
+
     return True
 
 
@@ -47,7 +55,7 @@ class GoliashCoordinator(DataUpdateCoordinator):
     """Coordinator for fetching data from Goliash API."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
+        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self._username = entry.data[CONF_USERNAME]
         self._password = entry.data[CONF_PASSWORD]
         self._device_id = entry.data[CONF_DEVICE_ID]
@@ -70,8 +78,10 @@ class GoliashCoordinator(DataUpdateCoordinator):
             self._token = await self._login()
 
             now = datetime.now(timezone.utc)
-            date_from = (now - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-            date_to = now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            yesterday = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            date_from = yesterday.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            date_to = today.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
             url = API_MEASUREMENTS.format(device_id=self._device_id)
             async with aiohttp.ClientSession() as session:
